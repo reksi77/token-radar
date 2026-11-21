@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Launch Radar — pre-token protocols ranked by implied value</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <h1><span class="radar-dot" aria-hidden="true"></span>Token Launch Radar</h1>
+      <p class="sub">Which pre-token protocol is worth farming next — ranked by what its
+      launch would be worth, with the steps to farm each one.</p>
+    </div>
+    <div class="meta" id="meta">Loading…</div>
+  </div>
+</header>
+
+<main>
+  <section class="stats" id="stats" aria-label="Board summary"></section>
+
+  <section class="controls" aria-label="Filter the board">
+    <label>Search <input id="q" type="search" placeholder="Protocol name…" autocomplete="off"></label>
+    <label>Category
+      <select id="cat"><option value="">All categories</option></select>
+    </label>
+    <label>Chain
+      <select id="chain"><option value="">All chains</option></select>
+    </label>
+    <label>Min TVL
+      <select id="mintvl">
+        <option value="0">Any TVL</option>
+        <option value="50000000">$50M+</option>
+        <option value="100000000">$100M+</option>
+        <option value="250000000">$250M+</option>
+        <option value="500000000">$500M+</option>
+      </select>
+    </label>
+    <label class="check"><input id="wl" type="checkbox"> Watchlist only</label>
+    <button id="reset" type="button">Reset</button>
+  </section>
+
+  <section class="board-wrap">
+    <table id="board">
+      <thead>
+        <tr>
+          <th data-sort="rank" class="num sorted">Rank</th>
+          <th data-sort="name">Protocol</th>
+          <th data-sort="category">Category</th>
+          <th data-sort="chains">Chains</th>
+          <th data-sort="tvl_usd" class="num">TVL</th>
+          <th data-sort="change_7d" class="num">7d</th>
+          <th data-sort="age_years" class="num">Age</th>
+          <th data-sort="implied_value_usd" class="num">Implied value</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="count" id="count"></p>
+  </section>
+
+  <section class="detail" id="detail" hidden aria-label="Protocol detail">
+    <div class="detail-head">
+      <h2 id="d-name"></h2>
+      <div class="badges" id="d-badges"></div>
+      <button id="d-close" type="button" aria-label="Close detail">×</button>
+    </div>
+    <div class="detail-grid" id="d-stats"></div>
+    <h3>How the implied value is derived</h3>
+    <p class="formula" id="d-formula"></p>
+    <table class="breakdown" id="d-breakdown"></table>
+    <h3>How to farm it</h3>
+    <ol class="steps" id="d-steps"></ol>
+    <p class="warn">This protocol records no token in the snapshot. That is the
+    record, not proof: it may still have a token the record does not carry.
+    Farming costs real money in fees and carries the protocol's own risks —
+    never farm with money you cannot afford to lose.</p>
+  </section>
+
+  <section class="method" aria-label="How the value is modelled">
+    <h2>How the value is modelled</h2>
+    <p>Every implied value on this board is computed from the snapshot's own
+    figures by <code>impliedValue</code> in <code>lib/model.ts</code>:</p>
+    <p class="formula">implied value = TVL × category multiple × growth factor × age factor</p>
+    <ul>
+      <li><strong>Category multiple</strong> — the median market-cap-to-TVL ratio
+      of the tokenized protocols in the same category, shrunk toward the global
+      median when a category has few tokenized peers, clamped to 0.02–2.00.
+      Categories whose tokens trade at a high multiple of TVL are categories
+      whose next token is worth more. Computed by
+      <code>categoryMultiples</code>, never from a list of names.</li>
+      <li><strong>Growth factor</strong> — 1 plus twice the protocol's 7-day TVL
+      change, clamped to 0.70–1.50. Fast-growing TVL is worth more than flat
+      TVL; an unreported change scores 1.00.</li>
+      <li><strong>Age factor</strong> — 1 plus 0.05 per year listed with no token,
+      capped at 1.20. A protocol that ran for years with no token has a longer
+      record and more pent-up launch value; the factor is deliberately small so
+      TVL and the category multiple do the ranking, not age alone.</li>
+    </ul>
+    <p>Protocols whose token already trades are <strong>not ranked as
+    candidates</strong>: they are the peers the multiples are computed from,
+    and the board holds pre-token protocols only. The watchlist (40 protocols
+    at or above the $50M floor) is the floor, never the ceiling — the board
+    also ranks the early pre-token protocols below it.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Source: DefiLlama protocol data, snapshot of 14 November 2026. Implied
+  values are this board's own claim, not a price, a prediction of whether or
+  when a token is issued, or investment advice.</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
