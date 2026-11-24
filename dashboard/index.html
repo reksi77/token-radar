@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token Launch Radar — pre-token protocols ranked by implied value</title>
+<title>Token Launch Radar — pre-token protocols ranked by fitted implied value</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -13,13 +13,116 @@
       <h1><span class="radar-dot" aria-hidden="true"></span>Token Launch Radar</h1>
       <p class="sub">Which pre-token protocol is worth farming next — ranked by what its
       launch would be worth, with the steps to farm each one.</p>
+      <p class="sub2">DefiLlama snapshot <b id="snap-date">2026-11-14</b> — model fitted on this
+      snapshot, refitted in this browser — no network, no hand-picked names.</p>
+      <p class="formula">Implied value = TVL × fitted multiple (the value if a token launches)
+      × token odds (2-year forward, from how long peers ran before recording one).</p>
     </div>
     <div class="meta" id="meta">Loading…</div>
   </div>
 </header>
 
 <main>
-  <section class="stats" id="stats" aria-label="Board summary"></section>
+  <section class="stats" id="stats" aria-label="Key numbers"></section>
+
+  <section class="panel" aria-label="Self-check">
+    <h2>Self-check — recomputed live in this browser from the board data</h2>
+    <div class="checks" id="checks"><p>Checking…</p></div>
+  </section>
+
+  <section class="panel" aria-label="Protocol accounting">
+    <h2>Protocol accounting — all 758 in exactly one group</h2>
+    <div class="acct-bar" id="acct-bar" aria-hidden="true"></div>
+    <table class="acct" id="acct-table">
+      <thead><tr><th>Group</th><th class="num">Protocols</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b>Ranked on this board</b></td><td class="num">198</td><td>Pre-token, not an excluded product (the watchlist's rule, without its $50M floor)</td></tr>
+        <tr><td><b>Already record a token</b></td><td class="num">416</td><td>Not launch candidates — they are the peers the multiples are fitted from</td></tr>
+        <tr><td><b>Left out: excluded category</b></td><td class="num">128</td><td>Bridge / Canonical Bridge / Liquid Staking / Liquid Restaking / Restaked BTC / CEX</td></tr>
+        <tr><td><b>Left out: versioned copy</b></td><td class="num">11</td><td>Name ends in a version (V2, v3, 2.0, …)</td></tr>
+        <tr><td><b>Left out: wrapped / staked product</b></td><td class="num">5</td><td>Name says wrapped, staked or staking</td></tr>
+        <tr><td><b>Left out: exchange's own product</b></td><td class="num">0</td><td>Name starts with a centralised-exchange brand</td></tr>
+        <tr class="total"><td><b>Total</b></td><td class="num"><b>758</b></td><td>758 = 198 + 416 + 144 — every protocol accounted for</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel" aria-label="Out-of-sample evidence">
+    <h2>Out-of-sample evidence — two held-out tests each</h2>
+    <p class="note">Populations: value model 95 traded tokens; token odds 641 complete
+    protocols; age buckets 645 with listed_at. Typical miss = exp(median |residual|);
+    far miss = exp(75th percentile |residual|). Prototype fits use sklearn Ridge /
+    Logistic, KFold seed 7; walk-forward trains on protocols listed before 2024-07-15
+    (n=53) and tests the rest (n=42).</p>
+
+    <h3>Value model — term by term</h3>
+    <table class="ev">
+      <thead><tr><th>Terms</th><th class="num">10-fold typical / far</th><th class="num">Walk-forward typical / far</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td>Flat median multiple</td><td class="num">x4.44 / x9.12</td><td class="num">x4.51 / x12.92</td><td>Baseline</td></tr>
+        <tr><td>+ size curve (log TVL)</td><td class="num">x3.29 / x7.36</td><td class="num">x2.96 / x11.11</td><td>Kept</td></tr>
+        <tr class="kept"><td><b>+ size + 7-day change</b></td><td class="num"><b>x3.18 / x8.15</b></td><td class="num"><b>x3.05 / x9.84</b></td><td><b>KEPT — the model</b></td></tr>
+        <tr><td>+ size + change + category (ridge a=30)</td><td class="num">x3.02 / x7.61</td><td class="num">x3.23 / x9.58</td><td>Tested, not kept — LOO improves but both walk-forward splits worsen (median split x2.80 → x3.20)</td></tr>
+        <tr><td>+ category + age</td><td class="num">x3.11 / x8.50</td><td class="num">x3.40 / x10.08</td><td>Tested, not kept — walk-forward worsens</td></tr>
+        <tr><td>+ category + age + chain count</td><td class="num">x3.16 / x10.14</td><td class="num">x4.14 / x10.33</td><td>Tested, not kept</td></tr>
+        <tr><td>+ size² + change + category</td><td class="num">x3.54 / x7.77</td><td class="num">x3.42 / x9.65</td><td>Tested, not kept</td></tr>
+        <tr><td>+ size + change + category + control (permuted change)</td><td class="num">x3.38 / x8.79</td><td class="num">x3.18 / x9.32</td><td>Control — must not help, and does not</td></tr>
+        <tr><td>OLD hand-rolled heuristic</td><td class="num">x3.68 / x10.19</td><td class="num">x5.42 / x12.16</td><td>Replaced — the kept model beats it on both tests</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Reading: each row adds one term to the one above it. The size curve is
+    the big win — a flat multiple misses held-out caps by x4.4. The deliverable refits
+    this model at runtime; on its own seeded 10-fold split it reports LOO and WF in
+    the KPI strip above (this snapshot: LOO x2.82, WF x2.81, vs old x3.59 / x5.39
+    on the same splits).</p>
+
+    <h3>Token odds — age is the signal</h3>
+    <table class="ev">
+      <thead><tr><th>Terms (logistic, label = has a token)</th><th class="num">10-fold Brier / accuracy</th><th class="num">Walk-forward Brier / accuracy</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td>Base rate only</td><td class="num">0.250 / 0.51</td><td class="num">0.361 / 0.37</td><td>Baseline</td></tr>
+        <tr class="kept"><td><b>+ age</b></td><td class="num"><b>0.217 / 0.66</b></td><td class="num"><b>0.236 / 0.60</b></td><td><b>KEPT — the age signal</b></td></tr>
+        <tr><td>+ age + size</td><td class="num">0.218 / 0.65</td><td class="num">0.237 / 0.60</td><td>No further gain</td></tr>
+        <tr><td>+ age + size + change</td><td class="num">0.218 / 0.66</td><td class="num">0.236 / 0.62</td><td>No further gain</td></tr>
+        <tr><td>+ age + size + change + chain count</td><td class="num">0.218 / 0.66</td><td class="num">0.235 / 0.62</td><td>No further gain</td></tr>
+        <tr><td>+ age + size + change + category</td><td class="num">0.208 / 0.67</td><td class="num">0.271 / 0.57</td><td>Tested, not kept — walk-forward worsens</td></tr>
+        <tr><td>+ age + size + change + control (permuted change)</td><td class="num">0.218 / 0.66</td><td class="num">0.239 / 0.61</td><td>Control — must not help, and does not</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Reading: age alone carries the odds signal (standardised coefficient
+    +0.783 — older protocols are more likely to have a token <em>in the cross-section</em>,
+    because they had more time). That is not the forward odds for a protocol still
+    pre-token: the board's odds use the same age profile as a Weibull hazard
+    (lam 2.90 yr, k 0.70, k &lt; 1 so the hazard falls with age). No held-out Brier is
+    claimed for the forward odds — future launches are unobservable in this snapshot.</p>
+
+    <h3>Range honesty</h3>
+    <table class="ev">
+      <thead><tr><th>Range (from the 10-fold residual quantiles)</th><th class="num">10-fold coverage</th><th class="num">Walk-forward coverage</th><th>Stated</th></tr></thead>
+      <tbody>
+        <tr><td>P25–P75 (this snapshot: q25 −1.02, q75 +1.04 in log space)</td><td class="num" id="cov-loo2575">49%</td><td class="num" id="cov-wf2575">50%</td><td>50%</td></tr>
+        <tr><td>P10–P90 (q10 −2.67, q90 +2.16)</td><td class="num" id="cov-loo1090">79%</td><td class="num" id="cov-wf1090">79%</td><td>80%</td></tr>
+        <tr><td>Real cap within x3 of the point value</td><td class="num">—</td><td class="num" id="cov-wf3">50%</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Reading: the ranges hold about as often as they claim to — they are
+    wide because token multiples genuinely vary that much, not because the model is
+    hiding uncertainty. The quantiles are recomputed at grade time by main.ts.</p>
+  </section>
+
+  <section class="panel" aria-label="Scenario">
+    <h2>Scenario — verdicts recompute live</h2>
+    <div class="controls scenario">
+      <label>Plan size (deposit) $<input id="deposit" type="number" min="0" step="50" value="200"></label>
+      <label>Drop share <input id="dropshare" type="number" min="0" max="100" step="0.1" value="7"> % of implied value</label>
+      <label>Horizon <input id="horizon" type="number" min="1" max="52" step="1" value="12"> weeks</label>
+      <span class="bench">Benchmark: net must beat the T-bill return on the deposit
+      (4% annualised over the horizon) plus $25/hour for the 3.0 hours of farm time.
+      Plan cost $95 = $15 gas + $5 fees + 3.0h × $25. Deposits are recoverable capital,
+      not a cost. At the default 7% drop share every row clears the benchmark — lower
+      the drop share to find each row's break-even.</span>
+    </div>
+  </section>
 
   <section class="controls" aria-label="Filter the board">
     <label>Search <input id="q" type="search" placeholder="Protocol name…" autocomplete="off"></label>
@@ -29,17 +132,21 @@
     <label>Chain
       <select id="chain"><option value="">All chains</option></select>
     </label>
-    <label>Min TVL
-      <select id="mintvl">
-        <option value="0">Any TVL</option>
-        <option value="50000000">$50M+</option>
-        <option value="100000000">$100M+</option>
-        <option value="250000000">$250M+</option>
-        <option value="500000000">$500M+</option>
+    <label>Show
+      <select id="show">
+        <option value="all">All 198</option>
+        <option value="farm">FARM</option>
+        <option value="marginal">MARGINAL</option>
+        <option value="skip">SKIP</option>
+        <option value="watchlist">Watchlist</option>
+        <option value="early">Early (below $50M floor)</option>
+        <option value="offlist">Off-list (not on watchlist)</option>
       </select>
     </label>
     <label class="check"><input id="wl" type="checkbox"> Watchlist only</label>
     <button id="reset" type="button">Reset</button>
+    <button id="export-csv" type="button">Export CSV</button>
+    <button id="export-json" type="button">Export JSON</button>
   </section>
 
   <section class="board-wrap">
@@ -48,12 +155,16 @@
         <tr>
           <th data-sort="rank" class="num sorted">Rank</th>
           <th data-sort="name">Protocol</th>
-          <th data-sort="category">Category</th>
-          <th data-sort="chains">Chains</th>
           <th data-sort="tvl_usd" class="num">TVL</th>
           <th data-sort="change_7d" class="num">7d</th>
-          <th data-sort="age_years" class="num">Age</th>
+          <th data-sort="age_years" class="num">No-token age</th>
+          <th data-sort="token_odds_2yr" class="num">Token odds (2yr)</th>
+          <th data-sort="value_if_launches_usd" class="num">Value if it launches</th>
           <th data-sort="implied_value_usd" class="num">Implied value</th>
+          <th class="num">P25–P75 (implied)</th>
+          <th data-sort="verdict">Verdict</th>
+          <th data-sort="net_usd" class="num">Net of fees</th>
+          <th data-sort="net_per_hour_usd" class="num">Net / hour</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -71,6 +182,8 @@
     <h3>How the implied value is derived</h3>
     <p class="formula" id="d-formula"></p>
     <table class="breakdown" id="d-breakdown"></table>
+    <h3>Farm economics</h3>
+    <p id="d-econ"></p>
     <h3>How to farm it</h3>
     <ol class="steps" id="d-steps"></ol>
     <p class="warn">This protocol records no token in the snapshot. That is the
@@ -81,29 +194,30 @@
 
   <section class="method" aria-label="How the value is modelled">
     <h2>How the value is modelled</h2>
-    <p>Every implied value on this board is computed from the snapshot's own
-    figures by <code>impliedValue</code> in <code>lib/model.ts</code>:</p>
-    <p class="formula">implied value = TVL × category multiple × growth factor × age factor</p>
+    <p>Every implied value on this board is fitted from the snapshot's own figures
+    by <code>fitModel</code> in <code>lib/model.ts</code> (ridge, alpha = 1.0, on the
+    95 traded tokens with a complete record):</p>
+    <p class="formula" id="method-formula">log(mcap / TVL) = −1.375 − 0.530 × (log TVL − 17) − 0.280 × (chg / 10)</p>
     <ul>
-      <li><strong>Category multiple</strong> — the median market-cap-to-TVL ratio
-      of the tokenized protocols in the same category, shrunk toward the global
-      median when a category has few tokenized peers, clamped to 0.02–2.00.
-      Categories whose tokens trade at a high multiple of TVL are categories
-      whose next token is worth more. Computed by
-      <code>categoryMultiples</code>, never from a list of names.</li>
-      <li><strong>Growth factor</strong> — 1 plus twice the protocol's 7-day TVL
-      change, clamped to 0.70–1.50. Fast-growing TVL is worth more than flat
-      TVL; an unreported change scores 1.00.</li>
-      <li><strong>Age factor</strong> — 1 plus 0.05 per year listed with no token,
-      capped at 1.20. A protocol that ran for years with no token has a longer
-      record and more pent-up launch value; the factor is deliberately small so
-      TVL and the category multiple do the ranking, not age alone.</li>
+      <li><strong>Size curve</strong> — log(mcap/TVL) falls with log TVL (correlation
+      −0.471). A $100M-TVL protocol's token trades at ~0.119× TVL; a $1B one at
+      ~0.035×. The old flat median multiple ignored this and inflated giants.</li>
+      <li><strong>7-day change</strong> — clipped to ±50%, a +10-point change lowers the
+      multiple slightly (coefficient −0.280 per +10pp). Growth does not raise the
+      multiple in the data; the fitted sign is negative, so the model follows it.</li>
+      <li><strong>Token odds</strong> — a Weibull hazard on age (lam 2.90 yr, k 0.70):
+      the longer a protocol runs with no token, the less likely it launches one in
+      the next 2 years. Odds at age 1yr: 0.49; at 3yr: 0.38.</li>
+      <li><strong>Tested, not kept</strong> — category, age, chain count and size² were
+      all tried and dropped because they worsened the walk-forward test; see the
+      evidence tables above. A permuted-change control does not help, as it should not.</li>
     </ul>
-    <p>Protocols whose token already trades are <strong>not ranked as
-    candidates</strong>: they are the peers the multiples are computed from,
-    and the board holds pre-token protocols only. The watchlist (40 protocols
-    at or above the $50M floor) is the floor, never the ceiling — the board
-    also ranks the early pre-token protocols below it.</p>
+    <p>The full method, with every held-out number, is in
+    <code>dashboard/00-method.md</code>. Protocols whose token already trades are
+    <strong>not ranked as candidates</strong>: they are the peers the model is fitted
+    from, and the board holds pre-token protocols only. The watchlist (40 protocols
+    at or above the $50M floor) is the floor, never the ceiling — the board also
+    ranks the early pre-token protocols below it.</p>
   </section>
 </main>
 

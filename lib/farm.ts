@@ -294,3 +294,48 @@ export function generateFarmSteps(p: Protocol): string[] {
   const templates = TEMPLATES[p.category ?? ''] ?? GENERIC;
   return templates.map((t) => fill(t, ctx));
 }
+
+// ------------------------------------------------------------ farm costing
+// What a plan costs, stated once here so the board, the dashboard and the
+// method file all use the same numbers. The dollar amounts named in the
+// steps are mostly DEPOSITS ($100-$300 to fund the wallet, $50-$200 per
+// action): that money stays yours — it is recoverable capital, not a cost,
+// and it is NOT counted here. What is counted:
+//   - gas / network fees: the steps name $10-$20 for network fees; the
+//     midpoint, $15, is the gas estimate for the whole plan.
+//   - other fees / slippage: "a few dollars of slippage at most" in the
+//     swap steps; $5 for the plan.
+//   - time: 3.0 hours total — step 1 setup 0.5h, step 2 first action
+//     0.75h, step 3 second position 0.5h, step 4 weekly repeats 0.75h,
+//     step 5 logging / checking announcements 0.5h — valued at $25/hour
+//     ($75). The plan runs 6-8 weeks of weekly check-ins, but the hands-on
+//     time is about 3 hours.
+// Total non-recoverable cost: $15 + $5 + $75 = $95 per protocol.
+// The deposit itself (default plan size $200) is shown separately in the
+// dashboard's scenario controls and only enters the verdict through the
+// T-bill benchmark (see farmEconomics in model.ts).
+
+export interface PlanCost {
+  gas_usd: number;
+  other_fees_usd: number;
+  hours: number;
+  time_usd: number;
+  total_cost_usd: number;
+}
+
+export const HOURS_PER_STEP = [0.5, 0.75, 0.5, 0.75, 0.5];
+export const TIME_VALUE_USD_PER_HOUR = 25;
+
+/** The cost of farming one protocol. Same for every protocol: the steps
+ *  differ by category, but the fees and the time do not. */
+export function planCost(_p: Protocol): PlanCost {
+  const hours = HOURS_PER_STEP.reduce((a, b) => a + b, 0);
+  const timeUsd = hours * TIME_VALUE_USD_PER_HOUR;
+  return {
+    gas_usd: 15,
+    other_fees_usd: 5,
+    hours,
+    time_usd: timeUsd,
+    total_cost_usd: 15 + 5 + timeUsd,
+  };
+}
